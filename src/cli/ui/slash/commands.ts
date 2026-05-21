@@ -191,6 +191,13 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     summary: "connect, inspect, or disconnect the QQ channel",
     argCompleter: ["connect", "status", "disconnect"],
   },
+  {
+    cmd: "feishu",
+    group: "extend",
+    argsHint: "<connect|status|disconnect>",
+    summary: "connect, inspect, or disconnect the Feishu (Lark) bot channel",
+    argCompleter: ["connect", "status", "disconnect"],
+  },
 
   {
     cmd: "init",

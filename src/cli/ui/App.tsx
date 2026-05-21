@@ -50,9 +50,11 @@ import {
   savePreset,
   saveTheme,
 } from "../../config.js";
+import { loadFeishuConfig, saveFeishuConfig } from "../../config.js";
 import { Eventizer } from "../../core/eventize.js";
 import { pauseGate } from "../../core/pause-gate.js";
 import { autoResolveVerdict, shouldAutoResolveCheckpoint } from "../../core/pause-policy.js";
+import { FeishuChannel } from "../../feishu/channel.js";
 import { formatHookOutcomeMessage, runHooks } from "../../hooks.js";
 import { t, tObj } from "../../i18n/index.js";
 import { CacheFirstLoop, DeepSeekClient, ImmutablePrefix } from "../../index.js";
@@ -2871,6 +2873,43 @@ function AppInner({
             disconnect: qq.disconnect,
             status: qq.status,
           },
+          feishu: (() => {
+            let feishuChannel: FeishuChannel | null = null;
+            return {
+              connect: async (args: readonly string[]) => {
+                const existing = loadFeishuConfig();
+                const appId = args[0]?.trim() || existing.appId || "";
+                const appSecret = args[1]?.trim() || existing.appSecret || "";
+                if (!appId || !appSecret)
+                  throw new Error("Feishu App ID and App Secret are required.");
+                saveFeishuConfig({ appId, appSecret, enabled: true });
+                const channel = new FeishuChannel({
+                  onSubmitMessage: (message) => setQueuedSubmit(message),
+                  onError: (message) => log.pushWarning("Feishu", message),
+                });
+                await channel.start();
+                feishuChannel = channel;
+                qq.registerChannel(channel);
+                return "Feishu connected. Auto-start enabled.";
+              },
+              disconnect: async () => {
+                if (feishuChannel) {
+                  await qq.unregisterChannel("feishu");
+                }
+                feishuChannel = null;
+                saveFeishuConfig({ enabled: false });
+                return "Feishu disconnected. Auto-start disabled.";
+              },
+              status: () => {
+                const config = loadFeishuConfig();
+                const connected = feishuChannel !== null;
+                const enabled = !!config.enabled;
+                const configured = !!(config.appId && config.appSecret);
+                const access = feishuChannel?.describeAccess() ?? "n/a";
+                return `Feishu: ${connected ? "connected" : "disconnected"}, auto-start ${enabled ? "enabled" : "disabled"}, credentials ${configured ? "configured" : "not configured"}, access ${access}`;
+              },
+            };
+          })(),
           sessionId: session,
           jobs: codeMode?.jobs,
           postInfo: fromQQ ? qq.sendInfo : log.pushInfo,
@@ -3092,7 +3131,8 @@ function AppInner({
       submittingRef.current = true;
       busyRef.current = true;
       setBusy(true);
-      qq.noteTurnFromQQ(fromQQ);
+      const remotePlatform = raw.match(/^\[(\w+)\]\s/)?.[1]?.toLowerCase();
+      qq.noteTurnFromQQ(fromQQ, remotePlatform);
       abortedThisTurn.current = false;
       // Seal the in-progress history entry so this turn's edits open
       // a new one —prior turns are preserved intact for /history and

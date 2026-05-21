@@ -1,5 +1,6 @@
 import type { EditMode } from "../../../config.js";
 import type { McpServerSummary } from "../../../mcp/summary.js";
+import type { RemoteChannelManager } from "../../../remote/types.js";
 import type { JobRegistry } from "../../../tools/jobs.js";
 import type { PlanStep } from "../../../tools/plan.js";
 
@@ -151,11 +152,19 @@ export interface SlashContext {
   stopDashboard?: () => Promise<void>;
   /** Snapshot the dashboard's URL when running, null otherwise. */
   getDashboardUrl?: () => string | null;
+  /** @deprecated 使用 channelManager.getChannel("qq") */
   qq?: {
     connect: (args: readonly string[]) => Promise<string>;
     disconnect: () => Promise<string>;
     status: () => string;
   };
+  feishu?: {
+    connect: (args: readonly string[]) => Promise<string>;
+    disconnect: () => Promise<string>;
+    status: () => string;
+  };
+  /** 通用远程通道管理器 */
+  channelManager?: RemoteChannelManager;
   /** Current session id — included in `/feedback`'s diagnostic block when present. */
   sessionId?: string;
 }

@@ -105,6 +105,15 @@ Once connected, QQ messages can enter the current session, assistant replies rou
 
 For full setup, desktop quick start, and troubleshooting, see [QQ channel setup](./docs/qq-connect.md).
 
+### Feishu (lark) channel
+
+Feishu can extend an existing `chat` or `code` session as a remote channel. It uses the same Remote Channel abstraction as QQ.
+
+- CLI: start a session, then run `/feishu connect <appId> <appSecret>`
+- Desktop: not yet available (planned for a future release)
+
+Once connected, the bot adds a 👍 reaction to incoming messages and replies with interactive card messages. See [Feishu channel setup](./docs/feishu-connect.md) for permission setup, event configuration, and troubleshooting.
+
 ### Desktop client (prerelease)
 
 A native Tauri client for users who want a GUI over the same loop. Multi-tab, the right-panel shows files the agent has read or edited this session, the same cost / cache / token meters live at the bottom. Same DeepSeek API key, same `~/.reasonix` config — the desktop bundles its own Node runtime, no separate `npm install` step.
@@ -219,6 +228,7 @@ For live cache-hit rates, costs, and methodology, see [`benchmarks/`](./benchmar
 - [**Architecture**](./docs/ARCHITECTURE.md) — three pillars: cache-first loop, tool-call repair, cost control
 - [**CLI Reference**](./docs/CLI-REFERENCE.md) — every shell subcommand, every slash command, every keybinding
 - [**QQ channel setup**](./docs/qq-connect.md) — CLI first-connect flow, desktop entry, and QQ Open Platform credentials
+- [**Feishu channel setup**](./docs/feishu-connect.md) — Feishu app creation, permissions, event subscription, and CLI connection
 - [**Benchmarks**](./benchmarks/) — τ-bench-lite harness, transcripts, cost methodology
 - [**Website**](https://esengine.github.io/DeepSeek-Reasonix/) — getting started, dashboard mockup, TUI mockup
 - [**Contributing**](./CONTRIBUTING.md) — comment policy, error-handling rules, library-over-hand-rolled

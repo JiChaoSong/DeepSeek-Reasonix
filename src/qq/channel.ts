@@ -4,54 +4,20 @@ import { dirname, join } from "node:path";
 import { loadQQConfig } from "../config.js";
 import { loadDotenv } from "../env.js";
 import { t } from "../i18n/index.js";
+import { splitMessage } from "../remote/split.js";
+import type { ChannelStatus, RemoteChannel, RemoteChannelCallbacks } from "../remote/types.js";
 import { decideQQAccess, describeQQAccess, redactQQOpenId } from "./access.js";
 import { type C2CMessage, QQBot } from "./bot.js";
 import { formatQQAccessSummary } from "./strings.js";
 
 const QQ_LOCK_FILE = join(homedir(), ".reasonix", "qq-channel.pid");
 const QQ_MAX_CHUNK_BYTES = 1500;
-const NATURAL_SPLIT_MIN_FRACTION = 0.6;
-
-function fitUtf8Slice(text: string, maxBytes: number): string {
-  let end = 0;
-  let bytes = 0;
-  for (const char of text) {
-    const nextBytes = Buffer.byteLength(char, "utf8");
-    if (bytes > 0 && bytes + nextBytes > maxBytes) break;
-    end += char.length;
-    bytes += nextBytes;
-  }
-  return end > 0 ? text.slice(0, end) : text.slice(0, 1);
-}
-
-function pickNaturalSplit(candidate: string): number {
-  const minSplit = Math.floor(candidate.length * NATURAL_SPLIT_MIN_FRACTION);
-  const splitters = ["\n\n", "\n", " "];
-  for (const splitter of splitters) {
-    const at = candidate.lastIndexOf(splitter);
-    if (at >= minSplit) return at + splitter.length;
-  }
-  return candidate.length;
-}
 
 export function splitQQMessage(text: string, maxBytes = QQ_MAX_CHUNK_BYTES): string[] {
-  const chunks: string[] = [];
-  let remaining = text;
-  while (remaining.length > 0) {
-    if (Buffer.byteLength(remaining, "utf8") <= maxBytes) {
-      chunks.push(remaining);
-      break;
-    }
-
-    const candidate = fitUtf8Slice(remaining, maxBytes);
-    const splitAt = pickNaturalSplit(candidate);
-    chunks.push(candidate.slice(0, splitAt));
-    remaining = remaining.slice(splitAt).trimStart();
-  }
-  return chunks;
+  return splitMessage(text, maxBytes);
 }
 
-export class QQChannel {
+export class QQChannel implements RemoteChannel {
   private bot: QQBot | null = null;
   private qqUserId: string | null = null;
   private qqMessageId: string | null = null;
@@ -63,10 +29,12 @@ export class QQChannel {
   private lockAcquired = false;
   private nextOutboundMsgSeq = 1;
 
+  readonly platform = "qq";
+  private connectionStatus: ChannelStatus = { kind: "disconnected" };
+
   constructor(
-    private callbacks: {
+    private callbacks: RemoteChannelCallbacks & {
       onSubmitMessage: (text: string) => void;
-      onError?: (msg: string) => void;
     },
   ) {}
 
@@ -120,6 +88,15 @@ export class QQChannel {
     }
   }
 
+  getStatus(): ChannelStatus {
+    return this.connectionStatus;
+  }
+
+  private setStatus(status: ChannelStatus): void {
+    this.connectionStatus = status;
+    this.callbacks.onStatusChange?.(status);
+  }
+
   private handlePrivateMessage(msg: C2CMessage): void {
     const text = msg.content?.trim();
     if (!text) return;
@@ -165,6 +142,10 @@ export class QQChannel {
     this.applyAccessConfig(loadQQConfig());
   }
 
+  refreshConfig(): void {
+    this.refreshAccessConfig();
+  }
+
   describeAccess(): string {
     return describeQQAccess({
       ownerOpenId: this.ownerOpenId,
@@ -178,6 +159,7 @@ export class QQChannel {
   }
 
   async start(): Promise<void> {
+    this.setStatus({ kind: "connecting" });
     loadDotenv();
     this.acquireLock();
 
@@ -227,8 +209,10 @@ export class QQChannel {
       if (readyOrError === "timeout") {
         throw new Error(t("handlers.qq.readyTimeout"));
       }
+      this.setStatus({ kind: "connected" });
     } catch (err) {
       this.releaseLock();
+      this.setStatus({ kind: "failed", error: (err as Error).message });
       throw err;
     }
   }
@@ -257,5 +241,6 @@ export class QQChannel {
   async stop(): Promise<void> {
     await this.bot?.stop();
     this.releaseLock();
+    this.setStatus({ kind: "disconnected" });
   }
 }

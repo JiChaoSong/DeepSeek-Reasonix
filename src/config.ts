@@ -103,6 +103,14 @@ export interface QQBotConfig {
   allowlist?: string[];
 }
 
+export interface FeishuBotConfig {
+  appId?: string;
+  appSecret?: string;
+  enabled?: boolean;
+  ownerOpenId?: string;
+  allowlist?: string[];
+}
+
 export interface PricingOverride {
   inputCacheHit?: number;
   inputCacheMiss?: number;
@@ -224,6 +232,8 @@ export interface ReasonixConfig {
   };
   /** QQ Bot configuration */
   qq?: QQBotConfig;
+  /** Feishu Bot configuration */
+  feishu?: FeishuBotConfig;
 }
 
 export interface CustomMemoryTypeConfig {
@@ -1275,6 +1285,39 @@ export function loadQQConfig(path: string = defaultConfigPath()): LoadedQQConfig
     ownerOpenId,
     allowlist,
   };
+}
+
+export function loadFeishuConfig(path: string = defaultConfigPath()): LoadedQQConfig {
+  const fromEnv = {
+    appId: process.env.FEISHU_APPID,
+    appSecret: process.env.FEISHU_SECRET,
+    sandbox: undefined,
+    ownerOpenId: undefined,
+    allowlist: undefined,
+  };
+  const fromCfg =
+    ((readConfig(path) as Record<string, unknown>).feishu as Record<string, unknown> | undefined) ??
+    {};
+  const ownerOpenId = fromEnv.ownerOpenId;
+  const allowlist = undefined;
+  return {
+    appId: fromEnv.appId ?? (fromCfg.appId as string | undefined),
+    appSecret: fromEnv.appSecret ?? (fromCfg.appSecret as string | undefined),
+    sandbox: undefined,
+    enabled: (fromCfg.enabled as boolean | undefined) === true,
+    ownerOpenId,
+    allowlist,
+  };
+}
+
+export function saveFeishuConfig(cfg: LoadedQQConfig, path: string = defaultConfigPath()): void {
+  const rootCfg = readConfig(path);
+  (rootCfg as Record<string, unknown>).feishu = {
+    appId: cfg.appId,
+    appSecret: cfg.appSecret,
+    enabled: cfg.enabled,
+  };
+  writeConfig(rootCfg, path);
 }
 
 export function saveQQConfig(cfg: LoadedQQConfig, path: string = defaultConfigPath()): void {

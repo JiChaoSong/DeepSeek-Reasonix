@@ -89,6 +89,15 @@ Reasonix 可以把现有的 `chat`、`code` 或桌面端会话延伸到 QQ 上�
 
 完整配置、桌面端快速上手与排障说明见：[QQ 连接指南](./docs/qq-connect.zh-CN.md)。
 
+### 飞书通道
+
+飞书可以把现有的 `chat` 或 `code` 会话延伸到飞书上，作为远程通道使用；它和 QQ 共用同一套 Remote Channel 抽象层。
+
+- CLI：先启动会话，再执行 `/feishu connect <appId> <appSecret>`
+- 桌面端：暂不支持（计划后续版本添加）
+
+连接成功后，机器人会为收到的消息添加 👍 反应，并以卡片消息形式回复。权限配置、事件订阅和排障说明见：[飞书连接指南](./docs/feishu-connect.zh-CN.md)。
+
 <details>
 <summary><strong>切换工作区 · chat vs. code · 写第一个 Skill</strong></summary>
 
@@ -182,6 +191,7 @@ npx reasonix code --dir /path/to/project
 - [**架构**](./docs/ARCHITECTURE.md) —— 四大支柱、缓存优先循环、思维提取、脚手架
 - [**CLI 参考**](./docs/CLI-REFERENCE.md) —— 每个 shell 子命令、每个 slash 命令、每个快捷键
 - [**QQ 连接指南**](./docs/qq-connect.zh-CN.md) —— CLI 首次连接流程、桌面端入口和 QQ 开放平台凭据
+- [**飞书连接指南**](./docs/feishu-connect.zh-CN.md) —— 飞书应用创建、权限配置、事件订阅和 CLI 连接
 - [**基准测试**](./benchmarks/) —— τ-bench-lite harness、transcript、成本方法论
 - [**官方网站**](https://esengine.github.io/DeepSeek-Reasonix/) —— 入门、Dashboard 设计稿、TUI 设计稿
 - [**贡献指南**](./CONTRIBUTING.md) —— 注释规则、错误处理、用现成库不手写
